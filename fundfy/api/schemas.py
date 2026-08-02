@@ -59,6 +59,7 @@ class ExecutionResponse(BaseModel):
     business_id: str
     tasks: list[dict]
     status: str
+    job_id: str | None = None
 
 
 class DocumentGenerateRequest(BaseModel):
@@ -77,6 +78,7 @@ class DocumentResponse(BaseModel):
     doc_type: str
     title: str
     content: str
+    job_id: str | None = None
 
 
 class WorkstreamResponse(BaseModel):

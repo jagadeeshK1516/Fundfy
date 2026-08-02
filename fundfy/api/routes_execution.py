@@ -6,16 +6,31 @@ import uuid
 from fastapi import APIRouter
 
 from fundfy.api.schemas import ExecutionRequest, ExecutionResponse, WorkstreamResponse
+from fundfy.config import settings
 
 router = APIRouter(prefix="/api", tags=["execution"])
 
-# In-memory store for workstreams
+# In-memory store for workstreams (used when DB session not required)
 _workstreams: dict[str, list[dict]] = {}
 
 
 @router.post("/execute", response_model=ExecutionResponse)
 async def execute_plan(request: ExecutionRequest):
     """Trigger execution orchestrator for an objective."""
+    if settings.background_jobs_enabled:
+        from fundfy.worker.manager import BackgroundJobManager
+        manager = BackgroundJobManager()
+        job_id = await manager.enqueue_execution(
+            request.business_id, request.objective, request.context or ""
+        )
+        return ExecutionResponse(
+            business_id=request.business_id,
+            tasks=[],
+            status="queued",
+            job_id=job_id,
+        )
+
+    # Synchronous execution path
     from fundfy.dependencies import get_orchestrator
 
     planner, dispatcher = get_orchestrator()

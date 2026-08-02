@@ -14,16 +14,25 @@ import type {
 
 const BASE_URL = "/api";
 
-async function request<T>(
-  path: string,
-  options?: RequestInit
-): Promise<T> {
+let _sessionToken: string | null = null;
+
+export function setSessionToken(token: string | null) {
+  _sessionToken = token;
+}
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options?.headers as Record<string, string> || {}),
+  };
+
+  if (_sessionToken) {
+    headers["Authorization"] = `Bearer ${_sessionToken}`;
+  }
+
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    },
     ...options,
+    headers,
   });
 
   if (!res.ok) {

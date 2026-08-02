@@ -5,23 +5,25 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from fundfy.api.routes_chat import router as chat_router
-from fundfy.api.routes_business import router as business_router
-from fundfy.api.routes_execution import router as execution_router
-from fundfy.api.routes_documents import router as documents_router
-from fundfy.api.routes_communication import router as communication_router
-from fundfy.api.routes_files import router as files_router
 from fundfy.config import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
-    # Initialize database
+    # 1. Setup logging
+    from fundfy.logging import setup_logging
+    setup_logging()
+
+    # 2. Initialize Redis
+    from fundfy.redis import init_redis, close_redis
+    await init_redis()
+
+    # 3. Initialize database
     from fundfy.db import init_db
     await init_db()
 
-    # Initialize dependencies
+    # 4. Initialize dependencies
     from fundfy.memory.engine import MemoryEngine
     from fundfy.core.agent import FundfyAgent
     from fundfy.orchestrator.planner import ExecutionPlanner
@@ -62,14 +64,20 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    # Shutdown
+    await close_redis()
+
 
 app = FastAPI(
     title="Fundfy AI Business Execution Platform",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
-# CORS middleware
+# Middleware ordering: RequestID -> Logging -> RateLimit -> Auth -> CORS
+# (added in reverse order since Starlette processes them in stack order)
+
+# CORS middleware (outermost)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -78,16 +86,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Auth middleware
+from fundfy.auth.middleware import AuthMiddleware  # noqa: E402
+app.add_middleware(AuthMiddleware)
+
+# Rate limit middleware
+from fundfy.middleware.rate_limit import RateLimitMiddleware  # noqa: E402
+app.add_middleware(RateLimitMiddleware)
+
+# Logging middleware
+from fundfy.middleware.logging import LoggingMiddleware  # noqa: E402
+app.add_middleware(LoggingMiddleware)
+
+# Request ID middleware (innermost to response, outermost to request)
+from fundfy.middleware.request_id import RequestIDMiddleware  # noqa: E402
+app.add_middleware(RequestIDMiddleware)
+
 # Include routers
+from fundfy.api.routes_chat import router as chat_router  # noqa: E402
+from fundfy.api.routes_business import router as business_router  # noqa: E402
+from fundfy.api.routes_execution import router as execution_router  # noqa: E402
+from fundfy.api.routes_documents import router as documents_router  # noqa: E402
+from fundfy.api.routes_communication import router as communication_router  # noqa: E402
+from fundfy.api.routes_files import router as files_router  # noqa: E402
+from fundfy.api.routes_auth import router as auth_router  # noqa: E402
+from fundfy.api.routes_jobs import router as jobs_router  # noqa: E402
+from fundfy.api.routes_health import router as health_router  # noqa: E402
+
+app.include_router(health_router)
+app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(business_router)
 app.include_router(execution_router)
 app.include_router(documents_router)
 app.include_router(communication_router)
 app.include_router(files_router)
-
-
-@app.get("/health")
-async def health():
-    """Health check endpoint."""
-    return {"status": "healthy"}
+app.include_router(jobs_router)

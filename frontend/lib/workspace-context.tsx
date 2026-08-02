@@ -7,6 +7,8 @@ import React, {
   useEffect,
   type ReactNode,
 } from "react";
+import { useSession } from "next-auth/react";
+import { setSessionToken } from "./api";
 
 function generateUUID(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -75,14 +77,24 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(workspaceReducer, initialState);
+  const { data: session } = useSession();
 
   useEffect(() => {
-    let founderId = localStorage.getItem("fundfy_founder_id");
-    if (!founderId) {
-      founderId = generateUUID();
-      localStorage.setItem("fundfy_founder_id", founderId);
+    // Get founder ID from NextAuth session or fall back to localStorage
+    const sessionAny = session as { founderId?: string; accessToken?: string } | null;
+    if (sessionAny?.founderId) {
+      dispatch({ type: "SET_FOUNDER_ID", payload: sessionAny.founderId });
+      if (sessionAny.accessToken) {
+        setSessionToken(sessionAny.accessToken);
+      }
+    } else {
+      let founderId = localStorage.getItem("fundfy_founder_id");
+      if (!founderId) {
+        founderId = generateUUID();
+        localStorage.setItem("fundfy_founder_id", founderId);
+      }
+      dispatch({ type: "SET_FOUNDER_ID", payload: founderId });
     }
-    dispatch({ type: "SET_FOUNDER_ID", payload: founderId });
 
     const businessId = localStorage.getItem("fundfy_business_id");
     const businessName = localStorage.getItem("fundfy_business_name");
@@ -92,7 +104,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         payload: { id: businessId, name: businessName },
       });
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     if (state.businessId && state.businessName) {

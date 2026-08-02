@@ -1,6 +1,6 @@
 """Chat API routes."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
 from fundfy.api.schemas import ChatRequest, ChatResponse
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { SessionProvider } from "next-auth/react";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-context";
 import { Sidebar, MobileMenuButton } from "@/components/sidebar";
 import { ToastProvider } from "@/components/ui/toast";
@@ -27,10 +28,12 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
-    <WorkspaceProvider>
-      <ToastProvider>
-        <LayoutInner>{children}</LayoutInner>
-      </ToastProvider>
-    </WorkspaceProvider>
+    <SessionProvider>
+      <WorkspaceProvider>
+        <ToastProvider>
+          <LayoutInner>{children}</LayoutInner>
+        </ToastProvider>
+      </WorkspaceProvider>
+    </SessionProvider>
   );
 }

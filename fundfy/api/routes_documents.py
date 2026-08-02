@@ -5,6 +5,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query
 
 from fundfy.api.schemas import DocumentGenerateRequest, DocumentResponse
+from fundfy.config import settings
 
 router = APIRouter(prefix="/api", tags=["documents"])
 
@@ -15,6 +16,22 @@ _documents: dict[str, dict] = {}
 @router.post("/documents/generate", response_model=DocumentResponse)
 async def generate_document(request: DocumentGenerateRequest):
     """Generate a new document."""
+    if settings.background_jobs_enabled:
+        from fundfy.worker.manager import BackgroundJobManager
+        manager = BackgroundJobManager()
+        job_id = await manager.enqueue_document_generation(
+            request.business_id, request.doc_type, request.context or ""
+        )
+        return DocumentResponse(
+            id=job_id,
+            business_id=request.business_id,
+            doc_type=request.doc_type,
+            title="Generating...",
+            content="",
+            job_id=job_id,
+        )
+
+    # Synchronous execution path
     from fundfy.dependencies import get_document_generator
 
     generator = get_document_generator()
