@@ -1,0 +1,1 @@
+"""Fundfy test suite."""
