@@ -17,6 +17,10 @@ class ChatResponse(BaseModel):
 
     response: str
     founder_id: str
+    tool_calls: list[dict] | None = None
+    steps: int | None = None
+    checkpoints: list[dict] | None = None
+    files: list[dict] | None = None
 
 
 class BusinessCreate(BaseModel):

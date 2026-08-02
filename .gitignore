@@ -13,3 +13,5 @@ chroma_data/
 .mypy_cache/
 .venv/
 venv/
+generated_files/*
+!generated_files/.gitkeep

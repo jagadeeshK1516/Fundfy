@@ -13,5 +13,13 @@ async def chat(request: ChatRequest):
     from fundfy.dependencies import get_agent
 
     agent = get_agent()
-    response = await agent.chat(request.founder_id, request.message)
-    return ChatResponse(response=response, founder_id=request.founder_id)
+    result = await agent.chat_with_metadata(request.founder_id, request.message)
+
+    return ChatResponse(
+        response=result["response"],
+        founder_id=request.founder_id,
+        tool_calls=result.get("tool_calls"),
+        steps=result.get("steps"),
+        checkpoints=result.get("checkpoints"),
+        files=result.get("files"),
+    )
