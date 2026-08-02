@@ -112,6 +112,9 @@ from fundfy.api.routes_files import router as files_router  # noqa: E402
 from fundfy.api.routes_auth import router as auth_router  # noqa: E402
 from fundfy.api.routes_jobs import router as jobs_router  # noqa: E402
 from fundfy.api.routes_health import router as health_router  # noqa: E402
+from fundfy.api.routes_integrations import router as integrations_router  # noqa: E402
+from fundfy.api.routes_crm import router as crm_router  # noqa: E402
+from fundfy.api.routes_notifications import router as notifications_router  # noqa: E402
 
 app.include_router(health_router)
 app.include_router(auth_router)
@@ -122,3 +125,6 @@ app.include_router(documents_router)
 app.include_router(communication_router)
 app.include_router(files_router)
 app.include_router(jobs_router)
+app.include_router(integrations_router)
+app.include_router(crm_router)
+app.include_router(notifications_router)

@@ -113,3 +113,167 @@ export async function startCommunicationSession(
 export async function healthCheck(): Promise<HealthResponse> {
   return request<HealthResponse>("/health");
 }
+
+// --- Phase C API Functions ---
+
+// Google OAuth
+export async function getGoogleAuthUrl() {
+  return request<{ auth_url: string }>("/integrations/google/auth-url");
+}
+
+export async function googleCallback(code: string, state?: string) {
+  return request("/integrations/google/callback", {
+    method: "POST",
+    body: JSON.stringify({ code, state }),
+  });
+}
+
+export async function getGoogleStatus() {
+  return request<{ connected: boolean; scopes?: string[] }>("/integrations/google/status");
+}
+
+export async function disconnectGoogle() {
+  return request("/integrations/google/disconnect", { method: "DELETE" });
+}
+
+// Email Approvals
+export async function getPendingEmails() {
+  return request<any[]>("/emails/pending");
+}
+
+export async function approveEmail(emailId: string) {
+  return request(`/emails/${emailId}/approve`, { method: "POST" });
+}
+
+export async function rejectEmail(emailId: string) {
+  return request(`/emails/${emailId}/reject`, { method: "POST" });
+}
+
+// Calendar
+export async function getCalendarEvents(timeMin?: string, timeMax?: string) {
+  const params = new URLSearchParams();
+  if (timeMin) params.set("time_min", timeMin);
+  if (timeMax) params.set("time_max", timeMax);
+  return request<{ events: any[]; connected: boolean }>(`/calendar/events?${params}`);
+}
+
+export async function createCalendarEvent(payload: { summary: string; start: string; end: string; attendees?: string[]; meet_link?: boolean }) {
+  return request("/calendar/events", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function checkCalendarAvailability(timeMin: string, timeMax: string) {
+  return request<{ busy_slots: any[] }>(`/calendar/availability?time_min=${timeMin}&time_max=${timeMax}`);
+}
+
+// CRM
+export async function getCRMContacts(filters?: { type?: string; pipeline_stage?: string; query?: string }) {
+  const params = new URLSearchParams();
+  if (filters?.type) params.set("type", filters.type);
+  if (filters?.pipeline_stage) params.set("pipeline_stage", filters.pipeline_stage);
+  if (filters?.query) params.set("query", filters.query);
+  return request<{ contacts: any[]; count: number }>(`/crm/contacts?${params}`);
+}
+
+export async function addCRMContact(data: { name: string; email?: string; company?: string; role?: string; type?: string }) {
+  return request("/crm/contacts", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateCRMContact(contactId: string, data: Record<string, any>) {
+  return request(`/crm/contacts/${contactId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getCRMPipeline() {
+  return request<{ pipeline: Record<string, number> }>("/crm/pipeline");
+}
+
+export async function getContactInteractions(contactId: string) {
+  return request<{ interactions: any[] }>(`/crm/contacts/${contactId}/interactions`);
+}
+
+export async function logContactInteraction(contactId: string, data: { type: string; summary: string; details?: string }) {
+  return request(`/crm/contacts/${contactId}/interactions`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// Investors
+export async function searchInvestors(filters?: { stage?: string; industry?: string; location?: string }) {
+  const params = new URLSearchParams();
+  if (filters?.stage) params.set("stage", filters.stage);
+  if (filters?.industry) params.set("industry", filters.industry);
+  if (filters?.location) params.set("location", filters.location);
+  return request<{ investors: any[]; count: number }>(`/investors?${params}`);
+}
+
+export async function getInvestor(investorId: string) {
+  return request(`/investors/${investorId}`);
+}
+
+export async function addInvestor(data: Record<string, any>) {
+  return request("/investors", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// Grants
+export async function searchGrants(filters?: { industry?: string; region?: string; status?: string }) {
+  const params = new URLSearchParams();
+  if (filters?.industry) params.set("industry", filters.industry);
+  if (filters?.region) params.set("region", filters.region);
+  if (filters?.status) params.set("status", filters.status || "open");
+  return request<{ grants: any[]; count: number }>(`/grants?${params}`);
+}
+
+export async function getGrant(grantId: string) {
+  return request(`/grants/${grantId}`);
+}
+
+export async function matchGrants(businessId: string) {
+  return request("/grants/match", {
+    method: "POST",
+    body: JSON.stringify({ business_id: businessId }),
+  });
+}
+
+export async function getGrantApplications() {
+  return request<{ applications: any[] }>("/grants/applications");
+}
+
+export async function createGrantApplication(data: { grant_id: string; business_id?: string; notes?: string }) {
+  return request("/grants/applications", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateGrantApplication(appId: string, data: { status?: string; notes?: string }) {
+  return request(`/grants/applications/${appId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+// Notifications
+export async function getNotifications(limit = 50) {
+  return request<{ notifications: any[]; count: number }>(`/notifications?limit=${limit}`);
+}
+
+export async function markNotificationRead(notificationId: string) {
+  return request(`/notifications/${notificationId}/read`, { method: "PATCH" });
+}
+
+// Drive
+export async function uploadToDrive(fileId: string) {
+  return request(`/drive/upload/${fileId}`, { method: "POST" });
+}

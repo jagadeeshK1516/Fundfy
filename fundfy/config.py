@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     # Tavily
     tavily_api_key: str = ""
 
+    # Google OAuth
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:3000/api/integrations/google/callback"
+
+    # Encryption
+    encryption_key: str = ""  # Fernet key for token encryption
+
     # Files
     generated_files_dir: str = "./generated_files"
 

@@ -7,7 +7,13 @@ from pydantic import BaseModel
 
 from fundfy.documents.generator import DocumentGenerator
 from fundfy.tools.base import BaseTool
-from fundfy.tools.exporters import export_docx, export_markdown, export_pdf, export_pptx
+from fundfy.tools.exporters import (
+    export_docx,
+    export_financial_model_xlsx,
+    export_markdown,
+    export_pdf,
+    export_pptx,
+)
 from fundfy.tools.schemas import ToolResult
 
 
@@ -21,10 +27,10 @@ class GenerateDocumentArgs(BaseModel):
 
 
 class GenerateDocumentTool(BaseTool):
-    """Generate a business document and export it to a file (PDF, DOCX, PPTX, or Markdown)."""
+    """Generate a business document and export it to a file (PDF, DOCX, PPTX, XLSX, or Markdown)."""
 
     name = "generate_document"
-    description = "Generate a business document (business_plan, prd, pitch_deck, etc.) and export it as PDF, DOCX, PPTX, or Markdown."
+    description = "Generate a business document (business_plan, prd, pitch_deck, financial_model, etc.) and export it as PDF, DOCX, PPTX, XLSX, or Markdown."
     args_schema = GenerateDocumentArgs
 
     def __init__(self, document_generator: DocumentGenerator):
@@ -34,10 +40,10 @@ class GenerateDocumentTool(BaseTool):
         """Generate and export a document."""
         args = GenerateDocumentArgs(**kwargs)
 
-        if args.format not in ("pdf", "docx", "pptx", "markdown"):
+        if args.format not in ("pdf", "docx", "pptx", "xlsx", "markdown"):
             return ToolResult(
                 success=False,
-                error=f"Unsupported format: {args.format}. Use pdf, docx, pptx, or markdown.",
+                error=f"Unsupported format: {args.format}. Use pdf, docx, pptx, xlsx, or markdown.",
             )
 
         try:
@@ -51,14 +57,17 @@ class GenerateDocumentTool(BaseTool):
                 title = result["title"]
 
             # Export to the requested format
-            exporters = {
-                "pdf": export_pdf,
-                "docx": export_docx,
-                "pptx": export_pptx,
-                "markdown": export_markdown,
-            }
-            exporter = exporters[args.format]
-            filepath = exporter(title, content)
+            if args.format == "xlsx":
+                filepath = export_financial_model_xlsx(title, content)
+            else:
+                exporters = {
+                    "pdf": export_pdf,
+                    "docx": export_docx,
+                    "pptx": export_pptx,
+                    "markdown": export_markdown,
+                }
+                exporter = exporters[args.format]
+                filepath = exporter(title, content)
 
             return ToolResult(
                 success=True,
